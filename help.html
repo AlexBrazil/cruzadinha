@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Tutorial rapido de configuracao</title>
+</head>
+<body>
+<h1>Configurar uma nova atividade</h1>
+<p>Use este passo a passo sempre que precisar criar uma cruzadinha nova a partir do arquivo <code>data.json</code>.</p>
+
+<h2>Passo a passo basico</h2>
+<ol>
+  <li>Faça uma copia de seguranca de <code>data.json</code> antes de editar.</li>
+  <li>Abra o arquivo no editor de texto e ajuste os campos descritos abaixo.</li>
+  <li>Salve e recarregue <code>index.html</code> no navegador para testar.</li>
+</ol>
+
+<h2>Campos essenciais</h2>
+<h3>Cabecalho da atividade</h3>
+<ul>
+  <li><code>title</code>: nome mostrado no topo da pagina (ex.: "Cruzadinha - Capitais do Brasil").</li>
+  <li><code>taskDescription</code>: texto introdutorio. Aceita HTML simples (paragrafos, listas, links).</li>
+</ul>
+
+<h3>Palavras (lista <code>words</code>)</h3>
+<p>Cada item representa uma pista e deve seguir o padrao abaixo:</p>
+<pre><code>{
+  "clue": "Pergunta para o participante",
+  "answer": "Resposta correta",
+  "orientation": "across" ou "down",
+  "fixWord": false,
+  "row": null,
+  "column": null,
+  "extraImage": {
+    "path": "./assets/images/imagem.png",
+    "alt": "Descricao da imagem"
+  }
+}</code></pre>
+<ul>
+  <li><code>clue</code> (obrigatorio): texto da dica exibida na lista.</li>
+  <li><code>answer</code> (obrigatorio): palavra correta. O sistema ignora maiusculas, acentos e espacos extras.</li>
+  <li><code>orientation</code> (opcional): preferencia de posicao. Use <code>"across"</code> para horizontal ou <code>"down"</code> para vertical.</li>
+  <li><code>fixWord</code>: deixe <code>false</code> para gerar automaticamente. Use <code>true</code> apenas se quiser travar a posicao.</li>
+  <li><code>row</code> e <code>column</code>: coordenadas (base 1) usadas somente quando <code>fixWord</code> for <code>true</code>.</li>
+  <li><code>extraImage</code> (opcional): define uma imagem clicavel de apoio. Informe <code>path</code> relativo a <code>index.html</code> e um <code>alt</code> descritivo.</li>
+</ul>
+<p>Cadastre ao menos duas palavras e confirme que compartilham letras para permitir cruzamento.</p>
+
+<h3>Comportamento (<code>behaviour</code>)</h3>
+<ul>
+  <li><code>enableSolutionsButton</code>: controla o botao "Mostrar solucao".</li>
+  <li><code>enableRetry</code>: ativa o botao "Tentar novamente".</li>
+  <li>Outros campos (<code>enableInstantFeedback</code>, <code>scoreWords</code>, <code>applyPenalties</code>, <code>keepCorrectAnswers</code>) podem ficar como no exemplo padrao.</li>
+</ul>
+
+<h3>Tempo (<code>timer</code>)</h3>
+<ul>
+  <li><code>limitSeconds</code>: tempo limite em segundos. Defina zero ou remova para deixar sem cronometro regressivo.</li>
+</ul>
+
+<h3>Visual (<code>theme</code>)</h3>
+<ul>
+  <li>Cada cor (ex.: <code>backgroundColor</code>, <code>gridColor</code>, <code>cellBackgroundColor</code>) aceita o formato hexadecimal <code>#RRGGBB</code>.</li>
+  <li>Use esses campos para registrar o esquema de cores. Ajustes extras podem exigir mudancas em <code>style.css</code>.</li>
+</ul>
+
+<h3>Textos (<code>l10n</code>)</h3>
+<ul>
+  <li>Atualize mensagens e rotulos exibidos na interface, como <code>checkAnswer</code>, <code>tryAgain</code> e <code>extraClue</code>.</li>
+  <li>Mantenha marcadores como <code>@words</code> ou <code>@clue</code>, pois sao substituidos automaticamente pelo sistema.</li>
+</ul>
+
+<h3>Acessibilidade (<code>accessibility</code>)</h3>
+<ul>
+  <li>Personalize os textos lidos por leitores de tela (ex.: <code>crosswordGrid</code>, <code>correct</code>, <code>solutionFor</code>).</li>
+  <li>Preserve variaveis como <code>@score</code> e <code>@solution</code> para que a mensagem continue correta.</li>
+</ul>
+
+<h2>Boas praticas rapidas</h2>
+<ul>
+  <li>Valide o JSON apos cada edicao usando um validador online ou abrindo <code>index.html</code>.</li>
+  <li>Confirme que imagens citadas em <code>extraImage.path</code> existem em <code>./assets/images</code>.</li>
+  <li>Teste com respostas corretas e incorretas para verificar o comportamento dos botoes.</li>
+</ul>
+</body>
+</html>

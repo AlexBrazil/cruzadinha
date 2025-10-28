@@ -16,9 +16,7 @@ const state = {
   strings: {},
   timer: {
     seconds: 0,
-    interval: null,
-    limitSeconds: null,
-    expired: false
+    interval: null
   },
   isChecked: false,
   resizeFrame: null,
@@ -46,13 +44,7 @@ const elements = {
   keyboardOverlay: document.getElementById("keyboard-overlay"),
   keyboardBody: document.getElementById("keyboard-body"),
   keyboardClose: document.getElementById("keyboard-close"),
-  keyboardPreview: document.getElementById("keyboard-preview"),
-  orientationOverlay: document.getElementById("orientation-overlay"),
-  orientationClose: document.getElementById("orientation-close"),
-  orientationConfirm: document.getElementById("orientation-confirm"),
-  timeoutOverlay: document.getElementById("timeout-overlay"),
-  timeoutClose: document.getElementById("timeout-close"),
-  timeoutRetry: document.getElementById("timeout-retry")
+  keyboardPreview: document.getElementById("keyboard-preview")
 };
 
 const WORD_ID_PREFIX = "word-";
@@ -65,7 +57,7 @@ const KEYBOARD_ROWS = [
   ["Í","Ó","Ô","Õ","Ú","Ü"]
 ];
 const KEYBOARD_ACTIONS = [
-  { label: "?", action: "backspace" },
+  { label: "⌫", action: "backspace" },
   { label: "Limpar", action: "clear" },
   { label: "Fechar", action: "close" }
 ];
@@ -139,14 +131,6 @@ function prepareState(data) {
   state.words = rawWords.map((item, index) => createWord(item, index));
   state.wordsMap = new Map(state.words.map((w) => [w.id, w]));
   elements.statTotal.textContent = String(state.words.length);
-
-  const timerLimit = Math.floor(Number(data.timer?.limitSeconds ?? 0));
-  if (Number.isFinite(timerLimit) && timerLimit > 0) {
-    state.timer.limitSeconds = timerLimit;
-  } else {
-    state.timer.limitSeconds = null;
-  }
-  state.timer.expired = false;
 }
 
 function createWord(item, index) {
@@ -785,43 +769,9 @@ function attachEvents() {
       }
     });
   }
-  if (elements.orientationClose) {
-    elements.orientationClose.addEventListener("click", hideOrientationWarning);
-  }
-  if (elements.orientationConfirm) {
-    elements.orientationConfirm.addEventListener("click", hideOrientationWarning);
-  }
-  if (elements.orientationOverlay) {
-    elements.orientationOverlay.addEventListener("click", (event) => {
-      if (event.target === elements.orientationOverlay) {
-        hideOrientationWarning();
-      }
-    });
-  }
-  if (elements.timeoutClose) {
-    elements.timeoutClose.addEventListener("click", () => {
-      hideTimeoutOverlay();
-    });
-  }
-  if (elements.timeoutRetry) {
-    elements.timeoutRetry.addEventListener("click", () => {
-      hideTimeoutOverlay();
-      handleRetry();
-    });
-  }
-  if (elements.timeoutOverlay) {
-    elements.timeoutOverlay.addEventListener("click", (event) => {
-      if (event.target === elements.timeoutOverlay) {
-        hideTimeoutOverlay();
-      }
-    });
-  }
 }
 
 function handleCellClick(cell) {
-  if (isInteractionLocked()) {
-    return;
-  }
   if (cell.isSpacer) {
     return;
   }
@@ -849,7 +799,6 @@ function handleCellClick(cell) {
 }
 
 function selectWord(word, index = 0, orientation = word.orientation) {
-  if (isInteractionLocked()) return;
   if (!word) return;
   clearHighlights();
 
@@ -909,56 +858,6 @@ function clearHighlights() {
   updateKeyboardPreview();
 }
 
-function showOrientationWarning() {
-  if (!elements.orientationOverlay) return;
-  if (elements.orientationOverlay.hidden) {
-    elements.orientationOverlay.hidden = false;
-    elements.orientationOverlay.setAttribute("aria-hidden", "false");
-    if (elements.orientationConfirm) {
-      elements.orientationConfirm.focus({ preventScroll: true });
-    }
-  }
-}
-
-function hideOrientationWarning() {
-  if (!elements.orientationOverlay) return;
-  if (!elements.orientationOverlay.hidden) {
-    elements.orientationOverlay.hidden = true;
-    elements.orientationOverlay.setAttribute("aria-hidden", "true");
-  }
-}
-
-function setOrientationWarning(active) {
-  if (active) {
-    showOrientationWarning();
-  } else {
-    hideOrientationWarning();
-  }
-}
-
-function showTimeoutOverlay() {
-  if (!elements.timeoutOverlay) return;
-  elements.timeoutOverlay.hidden = false;
-  elements.timeoutOverlay.setAttribute("aria-hidden", "false");
-  if (elements.timeoutRetry) {
-    elements.timeoutRetry.focus({ preventScroll: true });
-  } else if (elements.timeoutClose) {
-    elements.timeoutClose.focus({ preventScroll: true });
-  }
-}
-
-function hideTimeoutOverlay() {
-  if (!elements.timeoutOverlay) return;
-  if (!elements.timeoutOverlay.hidden) {
-    elements.timeoutOverlay.hidden = true;
-    elements.timeoutOverlay.setAttribute("aria-hidden", "true");
-  }
-}
-
-function isInteractionLocked() {
-  return Boolean(state.timer.expired);
-}
-
 function updateKeyboardPreview() {
   if (!elements.keyboardPreview) {
     return;
@@ -1001,9 +900,6 @@ function updateKeyboardPreview() {
 }
 
 function handleKeyDown(event) {
-  if (isInteractionLocked()) {
-    return;
-  }
   if (!state.activeCell || !state.activeWord) {
     return;
   }
@@ -1072,7 +968,6 @@ function handleKeyDown(event) {
 }
 
 function moveToNextCell() {
-  if (isInteractionLocked()) return;
   const word = state.activeWord;
   if (!word) return;
   const nextIndex = Math.min(word.cells.length - 1, state.activeIndex + 1);
@@ -1081,7 +976,6 @@ function moveToNextCell() {
 }
 
 function moveToPreviousCell() {
-  if (isInteractionLocked()) return;
   const word = state.activeWord;
   if (!word) return;
   const prevIndex = Math.max(0, state.activeIndex - 1);
@@ -1090,7 +984,6 @@ function moveToPreviousCell() {
 }
 
 function moveInDirection(deltaRow, deltaCol) {
-  if (isInteractionLocked()) return;
   let targetRow = state.activeCell.row + deltaRow;
   let targetCol = state.activeCell.col + deltaCol;
   let cell = findCellByCoords(targetRow, targetCol);
@@ -1116,7 +1009,6 @@ function moveInDirection(deltaRow, deltaCol) {
 }
 
 function toggleOrientation() {
-  if (isInteractionLocked()) return;
   const cell = state.activeCell;
   if (!cell) return;
   if (cell.words.across && cell.words.down) {
@@ -1144,7 +1036,6 @@ function findCellByCoords(row, col) {
 }
 
 function setCellValue(cell, value) {
-  if (isInteractionLocked()) return;
   if (cell.isSpacer) {
     return;
   }
@@ -1190,9 +1081,6 @@ function resetWordStatus(cell, clearClasses) {
 }
 
 function handleCheck() {
-  if (isInteractionLocked()) {
-    return;
-  }
   let correctWords = 0;
   state.words.forEach((word) => {
     const input = word.cells.map((cell) => cell.normalizedChar || "").join("");
@@ -1232,9 +1120,6 @@ function updateWordClasses(word, isCorrect) {
 }
 
 function handleShowSolution() {
-  if (isInteractionLocked()) {
-    return;
-  }
   state.words.forEach((word) => {
     word.cells.forEach((cell, index) => {
       cell.userChar = word.sanitized[index];
@@ -1266,7 +1151,6 @@ function handleShowSolution() {
 }
 
 function handleRetry() {
-  resetTimeoutState();
   state.words.forEach((word) => {
     word.status = "pending";
     word.cells.forEach((cell) => {
@@ -1310,55 +1194,13 @@ function formatResultMessage(score, total) {
     .replace("@total", total);
 }
 
-function resetTimeoutState() {
-  state.timer.expired = false;
-  if (elements.app) {
-    elements.app.dataset.state = "ready";
-  }
-  hideTimeoutOverlay();
-}
-
-function handleTimeLimitReached() {
-  if (state.timer.expired) {
-    showTimeoutOverlay();
-    return;
-  }
-  state.timer.expired = true;
-  if (state.timer.interval) {
-    clearInterval(state.timer.interval);
-    state.timer.interval = null;
-  }
-  updateTimerDisplay();
-  clearHighlights();
-  if (elements.app) {
-    elements.app.dataset.state = "timeout";
-  }
-  showTimeoutOverlay();
-}
-
 function startTimer() {
   if (state.timer.interval) {
     clearInterval(state.timer.interval);
   }
-  state.timer.seconds = 0;
-  state.timer.expired = false;
-  if (elements.app) {
-    elements.app.dataset.state = "ready";
-  }
-  hideTimeoutOverlay();
   updateTimerDisplay();
-  if (state.timer.limitSeconds && state.timer.limitSeconds <= 0) {
-    handleTimeLimitReached();
-    return;
-  }
   state.timer.interval = setInterval(() => {
     state.timer.seconds += 1;
-    if (state.timer.limitSeconds && state.timer.seconds >= state.timer.limitSeconds) {
-      state.timer.seconds = state.timer.limitSeconds;
-      updateTimerDisplay();
-      handleTimeLimitReached();
-      return;
-    }
     updateTimerDisplay();
   }, 1000);
 }
@@ -1369,26 +1211,18 @@ function resetTimer() {
     state.timer.interval = null;
   }
   state.timer.seconds = 0;
-  state.timer.expired = false;
   updateTimerDisplay();
 }
 
 function updateTimerDisplay() {
-  const limit = state.timer.limitSeconds;
-  let displaySeconds;
-  if (limit && Number.isFinite(limit)) {
-    const remaining = Math.max(0, limit - state.timer.seconds);
-    displaySeconds = state.timer.expired ? 0 : remaining;
-  } else {
-    displaySeconds = state.timer.seconds;
-  }
-  const minutes = Math.floor(displaySeconds / 60).toString().padStart(2, "0");
-  const seconds = (displaySeconds % 60).toString().padStart(2, "0");
+  const minutes = Math.floor(state.timer.seconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const seconds = (state.timer.seconds % 60).toString().padStart(2, "0");
   elements.timeValue.textContent = `${minutes}:${seconds}`;
 }
 
 function openExtraClue(word) {
-  if (isInteractionLocked()) return;
   if (!word.extraImage || (!word.extraImage.dataUrl && !word.extraImage.path)) return;
   elements.extraBody.innerHTML = "";
   const img = document.createElement("img");
@@ -1437,7 +1271,6 @@ function buildKeyboard() {
 }
 
 function openKeyboard() {
-  if (isInteractionLocked()) return;
   if (!state.isTouch || !elements.keyboardOverlay) return;
   elements.keyboardOverlay.hidden = false;
   elements.keyboardOverlay.setAttribute("aria-hidden", "false");
@@ -1451,14 +1284,12 @@ function closeKeyboard() {
 }
 
 function handleKeyboardKey(key) {
-  if (isInteractionLocked()) return;
   if (!state.activeCell) return;
   setCellValue(state.activeCell, key);
   moveToNextCell();
 }
 
 function handleKeyboardAction(action) {
-  if (isInteractionLocked()) return;
   if (!state.activeCell) return;
   switch (action) {
     case "backspace":
@@ -1481,19 +1312,16 @@ function handleKeyboardAction(action) {
 
 function resizeGridShell() {
   if (!elements.gridShell || !elements.grid) {
-    hideOrientationWarning();
     return;
   }
 
   const cell = elements.grid.querySelector(".grid__cell:not(.grid__cell--empty)");
   if (!cell) {
-    hideOrientationWarning();
     return;
   }
 
   const rect = cell.getBoundingClientRect();
   if (!rect.width || !rect.height) {
-    hideOrientationWarning();
     return;
   }
 
@@ -1504,7 +1332,6 @@ function resizeGridShell() {
   const cols = rows ? state.gridMatrix[0].length : 0;
 
   if (!rows || !cols) {
-    hideOrientationWarning();
     return;
   }
 
@@ -1527,7 +1354,6 @@ function resizeGridShell() {
   const innerMargin = Math.max(gap, 8);
   const availableWidth = shellRect.width - paddingX - borderX - innerMargin * 2;
   if (availableWidth <= 0) {
-    showOrientationWarning();
     return;
   }
 
@@ -1540,14 +1366,14 @@ function resizeGridShell() {
     parseFloat(cellStyles.borderBottomWidth || "0");
 
   const minCell = 28;
-  const minUsableCell = 12;
   const maxCell = 84;
   const totalGapX = gap * Math.max(0, cols - 1);
-  const rawCell = (availableWidth - borderXPerCell * cols - totalGapX) / cols;
-  const cellBelowMin = rawCell < minCell;
   const computedCell = Math.max(
-    minUsableCell,
-    Math.min(maxCell, rawCell)
+    minCell,
+    Math.min(
+      maxCell,
+      (availableWidth - borderXPerCell * cols - totalGapX) / cols
+    )
   );
 
   const cellTotalWidth = computedCell + borderXPerCell;
@@ -1556,21 +1382,10 @@ function resizeGridShell() {
   const gridHeight = cellTotalHeight * rows + Math.max(0, rows - 1) * gap;
 
   elements.grid.style.setProperty("--cell-size", `${computedCell}px`);
-  if (cellBelowMin) {
-    const fontSize = Math.max(10, computedCell * 0.58);
-    const indexSize = Math.max(8, Math.min(fontSize * 0.45, 14));
-    elements.grid.style.setProperty("--cell-font-size", `${fontSize}px`);
-    elements.grid.style.setProperty("--cell-index-font-size", `${indexSize}px`);
-  } else {
-    elements.grid.style.removeProperty("--cell-font-size");
-    elements.grid.style.removeProperty("--cell-index-font-size");
-  }
-
   elements.grid.style.width = `${Math.ceil(gridWidth)}px`;
   elements.grid.style.margin = `${Math.ceil(innerMargin)}px auto`;
   const shellHeight = Math.ceil(gridHeight + paddingY + borderY + innerMargin * 2);
   elements.gridShell.style.height = `${shellHeight}px`;
-  setOrientationWarning(cellBelowMin);
 }
 
 function handleWindowResize() {

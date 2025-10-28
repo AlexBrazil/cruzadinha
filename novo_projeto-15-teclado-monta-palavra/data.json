@@ -71,10 +71,6 @@
                       "enableSolutionsButton":  true,
                       "keepCorrectAnswers":  false
                   },
-
-    "timer":  {
-        "limitSeconds":  180
-    },
     "theme":  {
                   "backgroundColor":  "#173354",
                   "gridColor":  "#000000",

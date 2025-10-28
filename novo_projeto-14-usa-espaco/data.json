@@ -71,10 +71,6 @@
                       "enableSolutionsButton":  true,
                       "keepCorrectAnswers":  false
                   },
-
-    "timer":  {
-        "limitSeconds":  180
-    },
     "theme":  {
                   "backgroundColor":  "#173354",
                   "gridColor":  "#000000",
@@ -91,10 +87,10 @@
                  "checkAnswer":  "Verificar",
                  "submitAnswer":  "Enviar",
                  "tryAgain":  "Tentar novamente",
-                 "showSolution":  "Mostrar solução",
-                 "couldNotGenerateCrossword":  "Não foi possí­vel gerar uma palavra cruzada com as palavras dadas. Por favor, tente novamente com menos palavras ou palavras que tenham mais caracteres em comum. Se estiver usando palavras fixas, certifique-se de que sua posição não impeça que outras palavras sejam colocadas.",
-                 "couldNotGenerateCrosswordTooFewWords":  "Não foi possível gerar uma palavra cruzada. Precisa de pelo menos duas palavras.",
-                 "probematicWords":  "Palavra(s) problemática(s): @words",
+                 "showSolution":  "Mostrar soluÃ§Ã£o",
+                 "couldNotGenerateCrossword":  "NÃ£o foi possÃ­vel gerar uma palavra cruzada com as palavras dadas. Por favor, tente novamente com menos palavras ou palavras que tenham mais caracteres em comum. Se estiver usando palavras fixas, certifique-se de que sua posiÃ§Ã£o nÃ£o impeÃ§a que outras palavras sejam colocadas.",
+                 "couldNotGenerateCrosswordTooFewWords":  "NÃ£o foi possÃ­vel gerar uma palavra cruzada. Precisa de pelo menos duas palavras.",
+                 "probematicWords":  "Palavra(s) problemÃ¡tica(s): @words",
                  "extraClue":  "Pista extra",
                  "closeWindow":  "Fechar janela"
              },
@@ -109,12 +105,12 @@
                           "correct":  "Correcto",
                           "wrong":  "Incorrecto",
                           "point":  "ponto",
-                          "solutionFor":  "Para @clue, a solução é: @solution",
+                          "solutionFor":  "Para @clue, a soluÃ§Ã£o Ã©: @solution",
                           "extraClueFor":  "Abrir uma pista extra para @clue",
                           "letterSevenOfNine":  "Letra @position de @length",
                           "lettersWord":  "@length letras na palavra",
-                          "check":  "Verificar os caracteres. As respostas serão marcadas como correctas, incorrectas, ou sem resposta.",
-                          "showSolution":  "Mostrar a solução. As palavras cruzadas serão preenchidas com sua solução correcta.",
+                          "check":  "Verificar os caracteres. As respostas serÃ£o marcadas como correctas, incorrectas, ou sem resposta.",
+                          "showSolution":  "Mostrar a soluÃ§Ã£o. As palavras cruzadas serÃ£o preenchidas com sua soluÃ§Ã£o correcta.",
                           "retry":  "Tente realizar a tarefa novamente. Redefinir todas as respostas e recomece.",
                           "yourResult":  "Conseguiu @score de @total pontos."
                       }

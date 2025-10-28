@@ -1,4 +1,4 @@
-﻿
+
 
 const state = {
   data: null,
@@ -16,9 +16,7 @@ const state = {
   strings: {},
   timer: {
     seconds: 0,
-    interval: null,
-    limitSeconds: null,
-    expired: false
+    interval: null
   },
   isChecked: false,
   resizeFrame: null,
@@ -45,27 +43,17 @@ const elements = {
   extraClose: document.getElementById("extra-clue-close"),
   keyboardOverlay: document.getElementById("keyboard-overlay"),
   keyboardBody: document.getElementById("keyboard-body"),
-  keyboardClose: document.getElementById("keyboard-close"),
-  keyboardPreview: document.getElementById("keyboard-preview"),
-  orientationOverlay: document.getElementById("orientation-overlay"),
-  orientationClose: document.getElementById("orientation-close"),
-  orientationConfirm: document.getElementById("orientation-confirm"),
-  timeoutOverlay: document.getElementById("timeout-overlay"),
-  timeoutClose: document.getElementById("timeout-close"),
-  timeoutRetry: document.getElementById("timeout-retry")
+  keyboardClose: document.getElementById("keyboard-close")
 };
 
 const WORD_ID_PREFIX = "word-";
 const KEYBOARD_ROWS = [
-  ["A","B","C","D","E","F","G"],
-  ["H","I","J","K","L","M","N"],
-  ["O","P","Q","R","S","T","U"],
-  ["V","W","X","Y","Z","Ç","-"],
-  ["Á","Â","Ã","À","É","Ê"],
-  ["Í","Ó","Ô","Õ","Ú","Ü"]
+  ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"],
+  ["N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"],
+  ["Á", "Â", "Ã", "À", "É", "Ê", "Í", "Ó", "Ô", "Õ", "Ú", "Ü", "Ç", "-"]
 ];
 const KEYBOARD_ACTIONS = [
-  { label: "?", action: "backspace" },
+  { label: "⌫", action: "backspace" },
   { label: "Limpar", action: "clear" },
   { label: "Fechar", action: "close" }
 ];
@@ -73,7 +61,7 @@ const KEYBOARD_ACTIONS = [
 init().catch((error) => {
   console.error(error);
   elements.app.dataset.state = "error";
-  elements.feedback.textContent = "NÃ£o foi possÃ­vel carregar a atividade.";
+  elements.feedback.textContent = "Não foi possível carregar a atividade.";
 });
 
 async function init() {
@@ -139,37 +127,12 @@ function prepareState(data) {
   state.words = rawWords.map((item, index) => createWord(item, index));
   state.wordsMap = new Map(state.words.map((w) => [w.id, w]));
   elements.statTotal.textContent = String(state.words.length);
-
-  const timerLimit = Math.floor(Number(data.timer?.limitSeconds ?? 0));
-  if (Number.isFinite(timerLimit) && timerLimit > 0) {
-    state.timer.limitSeconds = timerLimit;
-  } else {
-    state.timer.limitSeconds = null;
-  }
-  state.timer.expired = false;
 }
 
 function createWord(item, index) {
-  const normalized = normalizeAnswer(item.answer);
-  const gridPattern = [];
-  const sanitizedParts = [];
-  const letterOffsets = [];
-
-  for (let position = 0, letterIndex = 0; position < normalized.length; position += 1) {
-    const char = normalized[position];
-    if (char === " ") {
-      gridPattern.push({ type: "space" });
-    } else {
-      gridPattern.push({ type: "letter", char, letterIndex });
-      sanitizedParts.push(char);
-      letterOffsets.push(position);
-      letterIndex += 1;
-    }
-  }
-
-  const sanitized = sanitizedParts.join("");
+  const sanitized = normalizeAnswer(item.answer);
   if (!sanitized) {
-    throw new Error(`Resposta invalida para a pista "${item.clue}"`);
+    throw new Error(`Resposta inválida para a pista "${item.clue}"`);
   }
 
   return {
@@ -178,10 +141,6 @@ function createWord(item, index) {
     answer: item.answer,
     sanitized,
     length: sanitized.length,
-    gridPattern,
-    gridLength: gridPattern.length,
-    letterOffsets,
-    gridCells: new Array(gridPattern.length).fill(null),
     orientationPreference: item.orientation ? item.orientation.toLowerCase() : null,
     fixWord: Boolean(item.fixWord),
     fixedRow: toIndex(item.row),
@@ -197,6 +156,7 @@ function createWord(item, index) {
     clueElement: null
   };
 }
+
 function toIndex(value) {
   if (value === undefined || value === null) return null;
   const num = Number(value);
@@ -211,10 +171,9 @@ function normalizeAnswer(text) {
     .toUpperCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/[^A-Z0-9- ]/g, "");
+    .replace(/[^A-Z0-9]/g, "");
 }
+
 function normalizeChar(char) {
   if (!char) return "";
   return normalizeAnswer(char).slice(0, 1);
@@ -240,150 +199,89 @@ function generateLayout() {
     word.startRow = startRow;
     word.startCol = startCol;
     word.coords = [];
-    let letterIndex = 0;
-
-    for (let step = 0; step < word.gridLength; step += 1) {
-      const pattern = word.gridPattern[step];
-      const row = orientation === "down" ? startRow + step : startRow;
-      const col = orientation === "across" ? startCol + step : startCol;
+    for (let i = 0; i < word.length; i += 1) {
+      const letter = word.sanitized[i];
+      const row = orientation === "down" ? startRow + i : startRow;
+      const col = orientation === "across" ? startCol + i : startCol;
       const key = `${row},${col}`;
-      let cell = grid.get(key);
 
+      let cell = grid.get(key);
       if (!cell) {
         cell = {
           row,
           col,
-          letter: pattern.type === "letter" ? pattern.char : "",
-          isSpacer: pattern.type === "space",
+          letter,
           words: { across: null, down: null }
         };
         grid.set(key, cell);
-      } else if (pattern.type === "space") {
-        cell.isSpacer = true;
       }
-
-      if (pattern.type === "letter") {
-        cell.letter = pattern.char;
-        if (!charMap.has(pattern.char)) {
-          charMap.set(pattern.char, []);
-        }
-        charMap.get(pattern.char).push({ row, col });
-        word.coords.push({ row, col, index: letterIndex, layoutIndex: step });
-      } else {
-        word.coords.push({ row, col, index: null, layoutIndex: step });
-      }
-
-      const entry = {
-        wordId: word.id,
-        index: pattern.type === "letter" ? letterIndex : null,
-        layoutIndex: step,
-        isSpacer: pattern.type === "space"
-      };
-
+      cell.letter = letter;
       if (orientation === "across") {
-        cell.words.across = entry;
+        cell.words.across = { wordId: word.id, index: i };
       } else {
-        cell.words.down = entry;
+        cell.words.down = { wordId: word.id, index: i };
       }
 
-      if (pattern.type === "letter") {
-        letterIndex += 1;
-      }
+      word.coords.push({ row, col, index: i });
 
       minRow = Math.min(minRow, row);
       maxRow = Math.max(maxRow, row);
       minCol = Math.min(minCol, col);
       maxCol = Math.max(maxCol, col);
+
+      if (!charMap.has(letter)) {
+        charMap.set(letter, []);
+      }
+      charMap.get(letter).push({ row, col });
     }
   };
 
   const canPlaceWord = (word, startRow, startCol, orientation) => {
-    for (let step = 0; step < word.gridLength; step += 1) {
-      const pattern = word.gridPattern[step];
-      const row = orientation === "down" ? startRow + step : startRow;
-      const col = orientation === "across" ? startCol + step : startCol;
+    for (let i = 0; i < word.length; i += 1) {
+      const letter = word.sanitized[i];
+      const row = orientation === "down" ? startRow + i : startRow;
+      const col = orientation === "across" ? startCol + i : startCol;
       const key = `${row},${col}`;
       const cell = grid.get(key);
 
-      if (pattern.type === "letter") {
-        const letter = pattern.char;
-        if (cell) {
-          if (cell.isSpacer) {
-            return false;
-          }
-          if (cell.letter && cell.letter !== letter) {
-            return false;
-          }
-          const existing = orientation === "across" ? cell.words.across : cell.words.down;
-          if (existing && existing.wordId !== word.id) {
-            return false;
-          }
-          const other = orientation === "across" ? cell.words.down : cell.words.across;
-          if (other && other.isSpacer && other.wordId !== word.id) {
-            return false;
-          }
-        } else {
-          if (orientation === "across") {
-            const up = grid.get(`${row - 1},${col}`);
-            const downCell = grid.get(`${row + 1},${col}`);
-            if (up && (!up.words.down || up.words.down.wordId === word.id)) {
-              return false;
-            }
-            if (downCell && (!downCell.words.down || downCell.words.down.wordId === word.id)) {
-              return false;
-            }
-          } else {
-            const left = grid.get(`${row},${col - 1}`);
-            const right = grid.get(`${row},${col + 1}`);
-            if (left && (!left.words.across || left.words.across.wordId === word.id)) {
-              return false;
-            }
-            if (right && (!right.words.across || right.words.across.wordId === word.id)) {
-              return false;
-            }
-          }
+      if (cell) {
+        if (cell.letter !== letter) {
+          return false;
+        }
+        if (orientation === "across" && cell.words.across && cell.words.across.wordId !== word.id) {
+          return false;
+        }
+        if (orientation === "down" && cell.words.down && cell.words.down.wordId !== word.id) {
+          return false;
         }
       } else {
-        if (cell) {
-          if (!cell.isSpacer) {
+        // rudimentary adjacency checks to avoid touching words side-by-side
+        if (orientation === "across") {
+          const up = grid.get(`${row - 1},${col}`);
+          const down = grid.get(`${row + 1},${col}`);
+          if (up && (!up.words.down || up.words.down.wordId === word.id)) {
             return false;
           }
-          const same = orientation === "across" ? cell.words.across : cell.words.down;
-          if (same && same.wordId !== word.id) {
-            return false;
-          }
-          const other = orientation === "across" ? cell.words.down : cell.words.across;
-          if (other && other.wordId !== word.id) {
+          if (down && (!down.words.down || down.words.down.wordId === word.id)) {
             return false;
           }
         } else {
-          if (orientation === "across") {
-            const up = grid.get(`${row - 1},${col}`);
-            const downCell = grid.get(`${row + 1},${col}`);
-            if (up && (!up.words.down || up.words.down.wordId === word.id)) {
-              return false;
-            }
-            if (downCell && (!downCell.words.down || downCell.words.down.wordId === word.id)) {
-              return false;
-            }
-          } else {
-            const left = grid.get(`${row},${col - 1}`);
-            const right = grid.get(`${row},${col + 1}`);
-            if (left && (!left.words.across || left.words.across.wordId === word.id)) {
-              return false;
-            }
-            if (right && (!right.words.across || right.words.across.wordId === word.id)) {
-              return false;
-            }
+          const left = grid.get(`${row},${col - 1}`);
+          const right = grid.get(`${row},${col + 1}`);
+          if (left && (!left.words.across || left.words.across.wordId === word.id)) {
+            return false;
+          }
+          if (right && (!right.words.across || right.words.across.wordId === word.id)) {
+            return false;
           }
         }
       }
     }
 
-    const span = word.gridLength;
+    // ensure preceding/following cells are empty when creating new word
     if (orientation === "across") {
       const before = grid.get(`${startRow},${startCol - 1}`);
-      const after = grid.get(`${startRow},${startCol + span}`);
+      const after = grid.get(`${startRow},${startCol + word.length}`);
       if (before && (!before.words.across || before.words.across.wordId !== word.id)) {
         return false;
       }
@@ -392,7 +290,7 @@ function generateLayout() {
       }
     } else {
       const before = grid.get(`${startRow - 1},${startCol}`);
-      const after = grid.get(`${startRow + span},${startCol}`);
+      const after = grid.get(`${startRow + word.length},${startCol}`);
       if (before && (!before.words.down || before.words.down.wordId !== word.id)) {
         return false;
       }
@@ -412,15 +310,16 @@ function generateLayout() {
     const candidateCells = letters
       .map((letter, index) => {
         const cells = charMap.get(letter) || [];
-        const layoutOffset = word.letterOffsets[index];
-        return cells.map((cell) => ({ ...cell, index, layoutOffset }));
+        return cells.map((cell) => ({ ...cell, index }));
       })
       .flat();
 
     orientations.forEach((orientation) => {
       candidateCells.forEach((candidate) => {
-        const startRow = orientation === "down" ? candidate.row - candidate.layoutOffset : candidate.row;
-        const startCol = orientation === "across" ? candidate.col - candidate.layoutOffset : candidate.col;
+        const deltaRow = orientation === "down" ? candidate.index : 0;
+        const deltaCol = orientation === "across" ? candidate.index : 0;
+        const startRow = candidate.row - deltaRow;
+        const startCol = candidate.col - deltaCol;
 
         if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
           return;
@@ -431,11 +330,10 @@ function generateLayout() {
         }
 
         let intersections = 0;
-        for (let step = 0; step < word.gridLength; step += 1) {
-          const row = orientation === "down" ? startRow + step : startRow;
-          const col = orientation === "across" ? startCol + step : startCol;
-          const existing = grid.get(`${row},${col}`);
-          if (existing && !existing.isSpacer) {
+        for (let i = 0; i < word.length; i += 1) {
+          const row = orientation === "down" ? startRow + i : startRow;
+          const col = orientation === "across" ? startCol + i : startCol;
+          if (grid.has(`${row},${col}`)) {
             intersections += 1;
           }
         }
@@ -470,7 +368,9 @@ function generateLayout() {
     }
 
     if (grid.size === 0) {
-      placeWordOnGrid(word, 0, 0, orientationOrder[0]);
+      const startRow = 0;
+      const startCol = 0;
+      placeWordOnGrid(word, startRow, startCol, orientationOrder[0]);
       return;
     }
 
@@ -480,6 +380,7 @@ function generateLayout() {
       return;
     }
 
+    // fallback: append word below existing grid
     const fallbackRow = maxRow + 2 + listIndex;
     placeWordOnGrid(word, fallbackRow, minCol, orientationOrder[0]);
   });
@@ -488,6 +389,7 @@ function generateLayout() {
   buildMatrixFromGrid(grid);
   assignNumbers();
 }
+
 function buildMatrixFromGrid(grid) {
   const { minRow, maxRow, minCol, maxCol } = state.bounds;
   const rows = maxRow - minRow + 1;
@@ -510,13 +412,11 @@ function buildMatrixFromGrid(grid) {
         col: globalCol,
         displayRow: r,
         displayCol: c,
-        solutionChar: cell.isSpacer ? "" : cell.letter,
+        solutionChar: cell.letter,
         userChar: "",
         normalizedChar: "",
         number: null,
         element: null,
-        letterElement: null,
-        isSpacer: Boolean(cell.isSpacer),
         words: {
           across: null,
           down: null
@@ -524,45 +424,29 @@ function buildMatrixFromGrid(grid) {
       };
 
       if (cell.words.across) {
-        const info = cell.words.across;
-        const word = state.wordsMap.get(info.wordId);
+        const word = state.wordsMap.get(cell.words.across.wordId);
         if (word) {
-          if (info.index !== null) {
-            if (!Array.isArray(word.cells)) {
-              word.cells = [];
-            }
-            word.cells[info.index] = finalCell;
+          if (!Array.isArray(word.cells)) {
+            word.cells = [];
           }
-          if (Array.isArray(word.gridCells)) {
-            word.gridCells[info.layoutIndex] = finalCell;
-          }
+          word.cells[cell.words.across.index] = finalCell;
           finalCell.words.across = {
             word,
-            index: info.index,
-            layoutIndex: info.layoutIndex,
-            isSpacer: info.isSpacer
+            index: cell.words.across.index
           };
         }
       }
 
       if (cell.words.down) {
-        const info = cell.words.down;
-        const word = state.wordsMap.get(info.wordId);
+        const word = state.wordsMap.get(cell.words.down.wordId);
         if (word) {
-          if (info.index !== null) {
-            if (!Array.isArray(word.cells)) {
-              word.cells = [];
-            }
-            word.cells[info.index] = finalCell;
+          if (!Array.isArray(word.cells)) {
+            word.cells = [];
           }
-          if (Array.isArray(word.gridCells)) {
-            word.gridCells[info.layoutIndex] = finalCell;
-          }
+          word.cells[cell.words.down.index] = finalCell;
           finalCell.words.down = {
             word,
-            index: info.index,
-            layoutIndex: info.layoutIndex,
-            isSpacer: info.isSpacer
+            index: cell.words.down.index
           };
         }
       }
@@ -573,6 +457,7 @@ function buildMatrixFromGrid(grid) {
 
   state.gridMatrix = matrix;
 }
+
 function assignNumbers() {
   let counter = 1;
   const rows = state.gridMatrix.length;
@@ -581,7 +466,7 @@ function assignNumbers() {
   for (let r = 0; r < rows; r += 1) {
     for (let c = 0; c < cols; c += 1) {
       const cell = state.gridMatrix[r][c];
-      if (!cell || cell.isEmpty || cell.isSpacer) continue;
+      if (!cell || cell.isEmpty) continue;
 
       let assignsNumber = false;
 
@@ -645,17 +530,6 @@ function renderGrid() {
         const empty = document.createElement("div");
         empty.className = "grid__cell grid__cell--empty";
         fragment.appendChild(empty);
-        continue;
-      }
-
-      if (cell.isSpacer) {
-        const spacer = document.createElement("div");
-        spacer.className = "grid__cell grid__cell--spacer";
-        spacer.dataset.row = String(cell.row);
-        spacer.dataset.col = String(cell.col);
-        spacer.setAttribute("aria-hidden", "true");
-        fragment.appendChild(spacer);
-        cell.element = spacer;
         continue;
       }
 
@@ -734,7 +608,7 @@ function createClueItem(word) {
   text.append(meta, label);
   header.appendChild(text);
 
-  if (word.extraImage && (word.extraImage.path || word.extraImage.dataUrl)) {
+  if (word.extraImage && word.extraImage.dataUrl) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "clue__extra-btn";
@@ -785,46 +659,9 @@ function attachEvents() {
       }
     });
   }
-  if (elements.orientationClose) {
-    elements.orientationClose.addEventListener("click", hideOrientationWarning);
-  }
-  if (elements.orientationConfirm) {
-    elements.orientationConfirm.addEventListener("click", hideOrientationWarning);
-  }
-  if (elements.orientationOverlay) {
-    elements.orientationOverlay.addEventListener("click", (event) => {
-      if (event.target === elements.orientationOverlay) {
-        hideOrientationWarning();
-      }
-    });
-  }
-  if (elements.timeoutClose) {
-    elements.timeoutClose.addEventListener("click", () => {
-      hideTimeoutOverlay();
-    });
-  }
-  if (elements.timeoutRetry) {
-    elements.timeoutRetry.addEventListener("click", () => {
-      hideTimeoutOverlay();
-      handleRetry();
-    });
-  }
-  if (elements.timeoutOverlay) {
-    elements.timeoutOverlay.addEventListener("click", (event) => {
-      if (event.target === elements.timeoutOverlay) {
-        hideTimeoutOverlay();
-      }
-    });
-  }
 }
 
 function handleCellClick(cell) {
-  if (isInteractionLocked()) {
-    return;
-  }
-  if (cell.isSpacer) {
-    return;
-  }
   const orientations = [];
   if (cell.words.across) orientations.push("across");
   if (cell.words.down) orientations.push("down");
@@ -849,19 +686,15 @@ function handleCellClick(cell) {
 }
 
 function selectWord(word, index = 0, orientation = word.orientation) {
-  if (isInteractionLocked()) return;
   if (!word) return;
   clearHighlights();
 
   state.activeWord = word;
   state.activeOrientation = orientation;
   state.activeIndex = index;
-  const highlightCells = Array.isArray(word.gridCells)
-    ? word.gridCells.filter(Boolean)
-    : [];
-  state.highlightedCells = highlightCells;
+  state.highlightedCells = [...word.cells];
 
-  highlightCells.forEach((cell) => {
+  word.cells.forEach((cell) => {
     if (!cell?.element) return;
     cell.element.classList.add("is-highlight");
   });
@@ -870,10 +703,7 @@ function selectWord(word, index = 0, orientation = word.orientation) {
     word.clueElement.classList.add("is-active");
   }
 
-  const targetCell = word.cells[index];
-  if (targetCell) {
-    focusCell(targetCell);
-  }
+  focusCell(word.cells[index]);
 }
 
 function focusCell(cell) {
@@ -887,7 +717,6 @@ function focusCell(cell) {
   if (state.isTouch) {
     openKeyboard();
   }
-  updateKeyboardPreview();
 }
 
 function clearHighlights() {
@@ -900,110 +729,12 @@ function clearHighlights() {
   });
   state.highlightedCells = [];
   state.activeCell = null;
-  state.activeWord = null;
-  state.activeOrientation = null;
-  state.activeIndex = 0;
   if (state.isTouch) {
     closeKeyboard();
   }
-  updateKeyboardPreview();
-}
-
-function showOrientationWarning() {
-  if (!elements.orientationOverlay) return;
-  if (elements.orientationOverlay.hidden) {
-    elements.orientationOverlay.hidden = false;
-    elements.orientationOverlay.setAttribute("aria-hidden", "false");
-    if (elements.orientationConfirm) {
-      elements.orientationConfirm.focus({ preventScroll: true });
-    }
-  }
-}
-
-function hideOrientationWarning() {
-  if (!elements.orientationOverlay) return;
-  if (!elements.orientationOverlay.hidden) {
-    elements.orientationOverlay.hidden = true;
-    elements.orientationOverlay.setAttribute("aria-hidden", "true");
-  }
-}
-
-function setOrientationWarning(active) {
-  if (active) {
-    showOrientationWarning();
-  } else {
-    hideOrientationWarning();
-  }
-}
-
-function showTimeoutOverlay() {
-  if (!elements.timeoutOverlay) return;
-  elements.timeoutOverlay.hidden = false;
-  elements.timeoutOverlay.setAttribute("aria-hidden", "false");
-  if (elements.timeoutRetry) {
-    elements.timeoutRetry.focus({ preventScroll: true });
-  } else if (elements.timeoutClose) {
-    elements.timeoutClose.focus({ preventScroll: true });
-  }
-}
-
-function hideTimeoutOverlay() {
-  if (!elements.timeoutOverlay) return;
-  if (!elements.timeoutOverlay.hidden) {
-    elements.timeoutOverlay.hidden = true;
-    elements.timeoutOverlay.setAttribute("aria-hidden", "true");
-  }
-}
-
-function isInteractionLocked() {
-  return Boolean(state.timer.expired);
-}
-
-function updateKeyboardPreview() {
-  if (!elements.keyboardPreview) {
-    return;
-  }
-
-  const container = elements.keyboardPreview;
-  container.innerHTML = "";
-
-  const word = state.activeWord;
-  if (!word || !Array.isArray(word.gridCells) || word.gridCells.length === 0) {
-    container.dataset.state = "empty";
-    return;
-  }
-
-  container.dataset.state = "active";
-  const fragment = document.createDocumentFragment();
-
-  word.gridCells.forEach((cell) => {
-    const slot = document.createElement("span");
-    slot.className = "keyboard__preview-slot";
-
-    if (cell?.isSpacer) {
-      slot.classList.add("keyboard__preview-slot--space");
-      slot.textContent = "\u00A0";
-    } else {
-      const char = cell?.userChar || "_";
-      if (!cell?.userChar) {
-        slot.classList.add("keyboard__preview-slot--empty");
-      }
-      slot.textContent = char;
-      if (state.activeCell === cell) {
-        slot.classList.add("keyboard__preview-slot--active");
-      }
-    }
-
-    fragment.appendChild(slot);
-  });
-
-  container.appendChild(fragment);
 }
 
 function handleKeyDown(event) {
-  if (isInteractionLocked()) {
-    return;
-  }
   if (!state.activeCell || !state.activeWord) {
     return;
   }
@@ -1072,7 +803,6 @@ function handleKeyDown(event) {
 }
 
 function moveToNextCell() {
-  if (isInteractionLocked()) return;
   const word = state.activeWord;
   if (!word) return;
   const nextIndex = Math.min(word.cells.length - 1, state.activeIndex + 1);
@@ -1081,7 +811,6 @@ function moveToNextCell() {
 }
 
 function moveToPreviousCell() {
-  if (isInteractionLocked()) return;
   const word = state.activeWord;
   if (!word) return;
   const prevIndex = Math.max(0, state.activeIndex - 1);
@@ -1090,16 +819,10 @@ function moveToPreviousCell() {
 }
 
 function moveInDirection(deltaRow, deltaCol) {
-  if (isInteractionLocked()) return;
-  let targetRow = state.activeCell.row + deltaRow;
-  let targetCol = state.activeCell.col + deltaCol;
-  let cell = findCellByCoords(targetRow, targetCol);
-  while (cell && (cell.isEmpty || cell.isSpacer)) {
-    targetRow += deltaRow;
-    targetCol += deltaCol;
-    cell = findCellByCoords(targetRow, targetCol);
-  }
-  if (cell && !cell.isEmpty && !cell.isSpacer) {
+  const targetRow = state.activeCell.row + deltaRow;
+  const targetCol = state.activeCell.col + deltaCol;
+  const cell = findCellByCoords(targetRow, targetCol);
+  if (cell && !cell.isEmpty) {
     const orientations = [];
     if (cell.words.across) orientations.push("across");
     if (cell.words.down) orientations.push("down");
@@ -1116,7 +839,6 @@ function moveInDirection(deltaRow, deltaCol) {
 }
 
 function toggleOrientation() {
-  if (isInteractionLocked()) return;
   const cell = state.activeCell;
   if (!cell) return;
   if (cell.words.across && cell.words.down) {
@@ -1144,16 +866,11 @@ function findCellByCoords(row, col) {
 }
 
 function setCellValue(cell, value) {
-  if (isInteractionLocked()) return;
-  if (cell.isSpacer) {
-    return;
-  }
   const normalized = normalizeChar(value);
   cell.userChar = normalized ? value.toUpperCase() : "";
   cell.normalizedChar = normalized;
   updateCellDisplay(cell);
   resetWordStatus(cell, true);
-  updateKeyboardPreview();
 }
 
 function updateCellDisplay(cell) {
@@ -1190,9 +907,6 @@ function resetWordStatus(cell, clearClasses) {
 }
 
 function handleCheck() {
-  if (isInteractionLocked()) {
-    return;
-  }
   let correctWords = 0;
   state.words.forEach((word) => {
     const input = word.cells.map((cell) => cell.normalizedChar || "").join("");
@@ -1208,7 +922,6 @@ function handleCheck() {
   state.isChecked = true;
   updateScoreDisplay();
   updateFeedback(formatResultMessage(correctWords, state.words.length));
-  updateKeyboardPreview();
   if (state.isTouch) {
     closeKeyboard();
   }
@@ -1232,9 +945,6 @@ function updateWordClasses(word, isCorrect) {
 }
 
 function handleShowSolution() {
-  if (isInteractionLocked()) {
-    return;
-  }
   state.words.forEach((word) => {
     word.cells.forEach((cell, index) => {
       cell.userChar = word.sanitized[index];
@@ -1259,14 +969,12 @@ function handleShowSolution() {
   state.isChecked = true;
   updateScoreDisplay();
   updateFeedback(formatResultMessage(state.score, state.words.length));
-  updateKeyboardPreview();
   if (state.isTouch) {
     closeKeyboard();
   }
 }
 
 function handleRetry() {
-  resetTimeoutState();
   state.words.forEach((word) => {
     word.status = "pending";
     word.cells.forEach((cell) => {
@@ -1310,55 +1018,13 @@ function formatResultMessage(score, total) {
     .replace("@total", total);
 }
 
-function resetTimeoutState() {
-  state.timer.expired = false;
-  if (elements.app) {
-    elements.app.dataset.state = "ready";
-  }
-  hideTimeoutOverlay();
-}
-
-function handleTimeLimitReached() {
-  if (state.timer.expired) {
-    showTimeoutOverlay();
-    return;
-  }
-  state.timer.expired = true;
-  if (state.timer.interval) {
-    clearInterval(state.timer.interval);
-    state.timer.interval = null;
-  }
-  updateTimerDisplay();
-  clearHighlights();
-  if (elements.app) {
-    elements.app.dataset.state = "timeout";
-  }
-  showTimeoutOverlay();
-}
-
 function startTimer() {
   if (state.timer.interval) {
     clearInterval(state.timer.interval);
   }
-  state.timer.seconds = 0;
-  state.timer.expired = false;
-  if (elements.app) {
-    elements.app.dataset.state = "ready";
-  }
-  hideTimeoutOverlay();
   updateTimerDisplay();
-  if (state.timer.limitSeconds && state.timer.limitSeconds <= 0) {
-    handleTimeLimitReached();
-    return;
-  }
   state.timer.interval = setInterval(() => {
     state.timer.seconds += 1;
-    if (state.timer.limitSeconds && state.timer.seconds >= state.timer.limitSeconds) {
-      state.timer.seconds = state.timer.limitSeconds;
-      updateTimerDisplay();
-      handleTimeLimitReached();
-      return;
-    }
     updateTimerDisplay();
   }, 1000);
 }
@@ -1369,30 +1035,22 @@ function resetTimer() {
     state.timer.interval = null;
   }
   state.timer.seconds = 0;
-  state.timer.expired = false;
   updateTimerDisplay();
 }
 
 function updateTimerDisplay() {
-  const limit = state.timer.limitSeconds;
-  let displaySeconds;
-  if (limit && Number.isFinite(limit)) {
-    const remaining = Math.max(0, limit - state.timer.seconds);
-    displaySeconds = state.timer.expired ? 0 : remaining;
-  } else {
-    displaySeconds = state.timer.seconds;
-  }
-  const minutes = Math.floor(displaySeconds / 60).toString().padStart(2, "0");
-  const seconds = (displaySeconds % 60).toString().padStart(2, "0");
+  const minutes = Math.floor(state.timer.seconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const seconds = (state.timer.seconds % 60).toString().padStart(2, "0");
   elements.timeValue.textContent = `${minutes}:${seconds}`;
 }
 
 function openExtraClue(word) {
-  if (isInteractionLocked()) return;
-  if (!word.extraImage || (!word.extraImage.dataUrl && !word.extraImage.path)) return;
+  if (!word.extraImage || !word.extraImage.dataUrl) return;
   elements.extraBody.innerHTML = "";
   const img = document.createElement("img");
-  img.src = word.extraImage.path || word.extraImage.dataUrl;
+  img.src = word.extraImage.dataUrl;
   img.alt = word.extraImage.alt || "";
   elements.extraBody.appendChild(img);
   elements.extraOverlay.hidden = false;
@@ -1437,11 +1095,9 @@ function buildKeyboard() {
 }
 
 function openKeyboard() {
-  if (isInteractionLocked()) return;
   if (!state.isTouch || !elements.keyboardOverlay) return;
   elements.keyboardOverlay.hidden = false;
   elements.keyboardOverlay.setAttribute("aria-hidden", "false");
-  updateKeyboardPreview();
 }
 
 function closeKeyboard() {
@@ -1451,14 +1107,12 @@ function closeKeyboard() {
 }
 
 function handleKeyboardKey(key) {
-  if (isInteractionLocked()) return;
   if (!state.activeCell) return;
   setCellValue(state.activeCell, key);
   moveToNextCell();
 }
 
 function handleKeyboardAction(action) {
-  if (isInteractionLocked()) return;
   if (!state.activeCell) return;
   switch (action) {
     case "backspace":
@@ -1481,19 +1135,16 @@ function handleKeyboardAction(action) {
 
 function resizeGridShell() {
   if (!elements.gridShell || !elements.grid) {
-    hideOrientationWarning();
     return;
   }
 
   const cell = elements.grid.querySelector(".grid__cell:not(.grid__cell--empty)");
   if (!cell) {
-    hideOrientationWarning();
     return;
   }
 
   const rect = cell.getBoundingClientRect();
   if (!rect.width || !rect.height) {
-    hideOrientationWarning();
     return;
   }
 
@@ -1504,7 +1155,6 @@ function resizeGridShell() {
   const cols = rows ? state.gridMatrix[0].length : 0;
 
   if (!rows || !cols) {
-    hideOrientationWarning();
     return;
   }
 
@@ -1527,7 +1177,6 @@ function resizeGridShell() {
   const innerMargin = Math.max(gap, 8);
   const availableWidth = shellRect.width - paddingX - borderX - innerMargin * 2;
   if (availableWidth <= 0) {
-    showOrientationWarning();
     return;
   }
 
@@ -1540,14 +1189,14 @@ function resizeGridShell() {
     parseFloat(cellStyles.borderBottomWidth || "0");
 
   const minCell = 28;
-  const minUsableCell = 12;
   const maxCell = 84;
   const totalGapX = gap * Math.max(0, cols - 1);
-  const rawCell = (availableWidth - borderXPerCell * cols - totalGapX) / cols;
-  const cellBelowMin = rawCell < minCell;
   const computedCell = Math.max(
-    minUsableCell,
-    Math.min(maxCell, rawCell)
+    minCell,
+    Math.min(
+      maxCell,
+      (availableWidth - borderXPerCell * cols - totalGapX) / cols
+    )
   );
 
   const cellTotalWidth = computedCell + borderXPerCell;
@@ -1556,21 +1205,10 @@ function resizeGridShell() {
   const gridHeight = cellTotalHeight * rows + Math.max(0, rows - 1) * gap;
 
   elements.grid.style.setProperty("--cell-size", `${computedCell}px`);
-  if (cellBelowMin) {
-    const fontSize = Math.max(10, computedCell * 0.58);
-    const indexSize = Math.max(8, Math.min(fontSize * 0.45, 14));
-    elements.grid.style.setProperty("--cell-font-size", `${fontSize}px`);
-    elements.grid.style.setProperty("--cell-index-font-size", `${indexSize}px`);
-  } else {
-    elements.grid.style.removeProperty("--cell-font-size");
-    elements.grid.style.removeProperty("--cell-index-font-size");
-  }
-
   elements.grid.style.width = `${Math.ceil(gridWidth)}px`;
   elements.grid.style.margin = `${Math.ceil(innerMargin)}px auto`;
   const shellHeight = Math.ceil(gridHeight + paddingY + borderY + innerMargin * 2);
   elements.gridShell.style.height = `${shellHeight}px`;
-  setOrientationWarning(cellBelowMin);
 }
 
 function handleWindowResize() {
@@ -1582,8 +1220,4 @@ function handleWindowResize() {
     resizeGridShell();
   });
 }
-
-
-
-
 

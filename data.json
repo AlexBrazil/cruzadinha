@@ -1,6 +1,6 @@
 ﻿{
-    "title":  "Cruzadinha - Capitais do Brasil - II",
-    "taskDescription":  "\u003cp\u003ePreencha a cruzadinha com os nomes das capitais solicitadas\u003c/p\u003e\n",
+    "title":  "Cruzadinha - Capitais do Brasil",
+    "taskDescription":  "Preencha a cruzadinha com os nomes das capitais solicitadas",
     "words":  [
                   {
                       "clue":  "Capital de Minas Gerais",
@@ -27,7 +27,7 @@
                                      }
                   },
                   {
-                      "clue":  "Capital de Santa catarina",
+                      "clue":  "Capital de Santa Catarina",
                       "answer":  "Florianópolis",
                       "orientation":  "across",
                       "fixWord":  false,
@@ -71,6 +71,10 @@
                       "enableSolutionsButton":  true,
                       "keepCorrectAnswers":  false
                   },
+
+    "timer":  {
+        "limitSeconds":  60
+    },
     "theme":  {
                   "backgroundColor":  "#173354",
                   "gridColor":  "#000000",
@@ -87,10 +91,10 @@
                  "checkAnswer":  "Verificar",
                  "submitAnswer":  "Enviar",
                  "tryAgain":  "Tentar novamente",
-                 "showSolution":  "Mostrar soluÃ§Ã£o",
-                 "couldNotGenerateCrossword":  "NÃ£o foi possÃ­vel gerar uma palavra cruzada com as palavras dadas. Por favor, tente novamente com menos palavras ou palavras que tenham mais caracteres em comum. Se estiver usando palavras fixas, certifique-se de que sua posiÃ§Ã£o nÃ£o impeÃ§a que outras palavras sejam colocadas.",
-                 "couldNotGenerateCrosswordTooFewWords":  "NÃ£o foi possÃ­vel gerar uma palavra cruzada. Precisa de pelo menos duas palavras.",
-                 "probematicWords":  "Palavra(s) problemÃ¡tica(s): @words",
+                 "showSolution":  "Mostrar solução",
+                 "couldNotGenerateCrossword":  "Não foi possí­vel gerar uma palavra cruzada com as palavras dadas. Por favor, tente novamente com menos palavras ou palavras que tenham mais caracteres em comum. Se estiver usando palavras fixas, certifique-se de que sua posição não impeça que outras palavras sejam colocadas.",
+                 "couldNotGenerateCrosswordTooFewWords":  "Não foi possível gerar uma palavra cruzada. Precisa de pelo menos duas palavras.",
+                 "probematicWords":  "Palavra(s) problemática(s): @words",
                  "extraClue":  "Pista extra",
                  "closeWindow":  "Fechar janela"
              },
@@ -102,15 +106,15 @@
                           "down":  "Para baixo",
                           "empty":  "Vazio",
                           "resultFor":  "Resultado para: @clue",
-                          "correct":  "Correcto",
+                          "correct":  "Correto",
                           "wrong":  "Incorrecto",
                           "point":  "ponto",
-                          "solutionFor":  "Para @clue, a soluÃ§Ã£o Ã©: @solution",
+                          "solutionFor":  "Para @clue, a solução é: @solution",
                           "extraClueFor":  "Abrir uma pista extra para @clue",
                           "letterSevenOfNine":  "Letra @position de @length",
                           "lettersWord":  "@length letras na palavra",
-                          "check":  "Verificar os caracteres. As respostas serÃ£o marcadas como correctas, incorrectas, ou sem resposta.",
-                          "showSolution":  "Mostrar a soluÃ§Ã£o. As palavras cruzadas serÃ£o preenchidas com sua soluÃ§Ã£o correcta.",
+                          "check":  "Verificar os caracteres. As respostas serão marcadas como correctas, incorrectas, ou sem resposta.",
+                          "showSolution":  "Mostrar a solução. As palavras cruzadas serão preenchidas com sua solução correcta.",
                           "retry":  "Tente realizar a tarefa novamente. Redefinir todas as respostas e recomece.",
                           "yourResult":  "Conseguiu @score de @total pontos."
                       }
